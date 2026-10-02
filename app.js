@@ -50,11 +50,11 @@ const formatarDinheiro = (valor) => new Intl.NumberFormat('pt-BR', { style: 'cur
 const formatarData = (dataStr) => { const p = dataStr.split('-'); return `${p[2]}/${p[1]}`; };
 
 // === SETUP SUPABASE COM AS SUAS CHAVES ===
-let supabase;
+let meuBanco; // Declarado fora para todo o código enxergar
 try {
     const supabaseUrl = 'https://txmqbndqrcjglnavqtfk.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXFibmRxcmNqZ2xuYXZxdGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTQ5MjMsImV4cCI6MjEwNjQ3MDkyM30.PWRQA7SVF811wC7KW1AcTTp6l98WQictczF8XO3CDDE';
-    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    meuBanco = window.supabase.createClient(supabaseUrl, supabaseKey);
 } catch (erro) {
     console.error("Erro crítico ao carregar as chaves:", erro);
 }
@@ -88,7 +88,7 @@ if(formTransacao) {
             });
         }
 
-        const { error } = await supabase.from('transacoes').insert(inserts);
+        const { error } = await meuBanco.from('transacoes').insert(inserts);
 
         if (error) {
             alert('Erro ao salvar no banco de dados: ' + error.message);
@@ -103,7 +103,7 @@ if(formTransacao) {
 
 // Puxar Dados do Banco
 async function carregarDados() {
-    if(!supabase) return; // Se o Supabase falhar, não trava a tela
+    if(!meuBanco) return; 
 
     const ano = dataAtual.getFullYear();
     const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
@@ -111,7 +111,7 @@ async function carregarDados() {
     const dataInicio = `${ano}-${mes}-01`;
     const dataFim = new Date(ano, dataAtual.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    const { data, error } = await supabase
+    const { data, error } = await meuBanco
         .from('transacoes')
         .select('*')
         .gte('data', dataInicio)
@@ -175,9 +175,9 @@ async function carregarDados() {
 
 // Deletar Transação
 window.deletarTransacao = async function(id) {
-    if(!supabase) return;
+    if(!meuBanco) return;
     if(confirm('Apagar essa transação?')) {
-        await supabase.from('transacoes').delete().eq('id', id);
+        await meuBanco.from('transacoes').delete().eq('id', id);
         carregarDados();
     }
 }
