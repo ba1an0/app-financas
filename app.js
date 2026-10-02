@@ -2,10 +2,12 @@
 const html = document.documentElement;
 const iconeTema = document.getElementById('iconeTema');
 
-// Checa se o usuário já tinha escolhido o tema antes ou o tema do celular
 if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     html.classList.add('dark');
-    if(iconeTema) { iconeTema.classList.replace('ph-moon', 'ph-sun'); }
+    if(iconeTema) { 
+        iconeTema.classList.remove('ph-moon');
+        iconeTema.classList.add('ph-sun');
+    }
 } else {
     html.classList.remove('dark');
 }
@@ -14,11 +16,13 @@ window.toggleTema = function() {
     if (html.classList.contains('dark')) {
         html.classList.remove('dark');
         localStorage.theme = 'light';
-        iconeTema.classList.replace('ph-sun', 'ph-moon');
+        iconeTema.classList.remove('ph-sun');
+        iconeTema.classList.add('ph-moon');
     } else {
         html.classList.add('dark');
         localStorage.theme = 'dark';
-        iconeTema.classList.replace('ph-moon', 'ph-sun');
+        iconeTema.classList.remove('ph-moon');
+        iconeTema.classList.add('ph-sun');
     }
 }
 
@@ -172,13 +176,11 @@ async function carregarDados() {
         totais[t.tipo] += parseFloat(t.valor);
         
         const isGanho = t.tipo === 'ganho';
-        // Cores dos ícones adaptadas pro dark mode
         const corIcone = isGanho ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30' : 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
         const icone = isGanho ? 'ph-trend-up' : (t.categoria === 'cartao' ? 'ph-credit-card' : 'ph-receipt');
         const sinal = isGanho ? '+' : '-';
 
         const item = document.createElement('div');
-        // Adicionado classes dark: no Javascript
         item.className = 'bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-between transition-colors duration-300';
         
         item.innerHTML = `
