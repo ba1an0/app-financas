@@ -4,15 +4,35 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 // DOM Elements
-const mesFiltro = document.getElementById('mesFiltro');
 const modalFundo = document.getElementById('modalFundo');
 const modalTransacao = document.getElementById('modalTransacao');
 const formTransacao = document.getElementById('formTransacao');
+const mesAtualDisplay = document.getElementById('mesAtualDisplay');
 
-// Setup Inicial do Filtro (Mês Atual)
-const hoje = new Date();
-mesFiltro.value = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
-mesFiltro.addEventListener('change', carregarDados);
+// === LÓGICA DE NAVEGAÇÃO DE MESES ===
+let dataAtual = new Date(); // Inicia com o mês corrente
+
+const mesesNomes = [
+    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+];
+
+function atualizarDisplayMes() {
+    const mesNome = mesesNomes[dataAtual.getMonth()];
+    const ano = dataAtual.getFullYear();
+    mesAtualDisplay.textContent = `${mesNome} ${ano}`;
+}
+
+window.mudarMes = function(direcao) {
+    // direcao: -1 para voltar, 1 para avançar
+    dataAtual.setMonth(dataAtual.getMonth() + direcao);
+    atualizarDisplayMes();
+    carregarDados(); // Recarrega os dados pro novo mês
+}
+
+// Inicializa o texto do mês na tela
+atualizarDisplayMes();
+// ===================================
 
 // Formatar Moeda
 const formatarDinheiro = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
@@ -27,6 +47,9 @@ function abrirModal() {
     modalFundo.classList.remove('hidden');
     // Pequeno delay para a animação rodar suave
     setTimeout(() => { modalTransacao.classList.add('modal-active'); }, 10);
+    
+    // Sempre que abrir, já coloca a data de hoje no campo de data da transação
+    document.getElementById('data').value = new Date().toISOString().split('T')[0];
 }
 
 function fecharModal() {
@@ -34,7 +57,7 @@ function fecharModal() {
     setTimeout(() => { modalFundo.classList.add('hidden'); }, 300);
 }
 
-function toggleParcelas() {
+window.toggleParcelas = function() {
     const tipo = document.getElementById('tipo').value;
     const categoria = document.getElementById('categoria').value;
     const divParcelas = document.getElementById('divParcelas');
@@ -63,6 +86,8 @@ formTransacao.addEventListener('submit', async (e) => {
 
     for (let i = 0; i < parcelas; i++) {
         let dataNova = new Date(dataBase);
+        // O Supabase entende fuso horário, então adicionamos 12h pra evitar que o dia volte 1 pra trás por causa do fuso do Brasil
+        dataNova.setHours(12); 
         dataNova.setMonth(dataNova.getMonth() + i);
         
         inserts.push({
@@ -88,9 +113,12 @@ formTransacao.addEventListener('submit', async (e) => {
 
 // Carregar Dados da Tela
 async function carregarDados() {
-    const [ano, mes] = mesFiltro.value.split('-');
+    const ano = dataAtual.getFullYear();
+    const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
+    
     const dataInicio = `${ano}-${mes}-01`;
-    const dataFim = new Date(ano, mes, 0).toISOString().split('T')[0];
+    // Pega o último dia do mês atual
+    const dataFim = new Date(ano, dataAtual.getMonth() + 1, 0).toISOString().split('T')[0];
 
     const { data, error } = await supabase
         .from('transacoes')
@@ -115,7 +143,6 @@ async function carregarDados() {
     data.forEach(t => {
         totais[t.tipo] += parseFloat(t.valor);
         
-        // Visual de acordo com o tipo
         const isGanho = t.tipo === 'ganho';
         const corIcone = isGanho ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50';
         const icone = isGanho ? 'ph-trend-up' : (t.categoria === 'cartao' ? 'ph-credit-card' : 'ph-receipt');
@@ -138,7 +165,7 @@ async function carregarDados() {
                 <p class="text-sm font-bold ${isGanho ? 'text-green-600' : 'text-slate-800'}">
                     ${sinal} ${formatarDinheiro(t.valor)}
                 </p>
-                <button onclick="deletarTransacao('${t.id}')" class="text-slate-300 hover:text-red-500 transition">
+                <button onclick="deletarTransacao('${t.id}')" class="text-slate-300 hover:text-red-500 transition p-1">
                     <i class="ph-fill ph-trash text-lg"></i>
                 </button>
             </div>
