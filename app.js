@@ -1,4 +1,3 @@
-// === COLAR SUAS CHAVES DO SUPABASE AQUI ===
 const supabaseUrl = 'https://txmqbndqrcjglnavqtfk.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXFibmRxcmNqZ2xuYXZxdGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTQ5MjMsImV4cCI6MjEwNjQ3MDkyM30.PWRQA7SVF811wC7KW1AcTTp6l98WQictczF8XO3CDDE';
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
