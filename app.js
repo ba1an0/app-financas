@@ -10,7 +10,7 @@ const formTransacao = document.getElementById('formTransacao');
 const mesAtualDisplay = document.getElementById('mesAtualDisplay');
 
 // === LÓGICA DE NAVEGAÇÃO DE MESES ===
-let dataAtual = new Date(); // Inicia com o mês corrente
+let dataAtual = new Date(); 
 
 const mesesNomes = [
     "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -20,22 +20,22 @@ const mesesNomes = [
 function atualizarDisplayMes() {
     const mesNome = mesesNomes[dataAtual.getMonth()];
     const ano = dataAtual.getFullYear();
-    mesAtualDisplay.textContent = `${mesNome} ${ano}`;
+    if(mesAtualDisplay) {
+        mesAtualDisplay.textContent = `${mesNome} ${ano}`;
+    }
 }
 
 window.mudarMes = function(direcao) {
-    // direcao: -1 para voltar, 1 para avançar
     dataAtual.setMonth(dataAtual.getMonth() + direcao);
     atualizarDisplayMes();
-    carregarDados(); // Recarrega os dados pro novo mês
+    carregarDados(); 
 }
 
-// Inicializa o texto do mês na tela
 atualizarDisplayMes();
-// ===================================
 
 // Formatar Moeda
 const formatarDinheiro = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+
 // Formatar Data (DD/MM)
 const formatarData = (dataStr) => {
     const partes = dataStr.split('-');
@@ -43,16 +43,13 @@ const formatarData = (dataStr) => {
 };
 
 // Funções do Modal
-function abrirModal() {
+window.abrirModal = function() {
     modalFundo.classList.remove('hidden');
-    // Pequeno delay para a animação rodar suave
     setTimeout(() => { modalTransacao.classList.add('modal-active'); }, 10);
-    
-    // Sempre que abrir, já coloca a data de hoje no campo de data da transação
     document.getElementById('data').value = new Date().toISOString().split('T')[0];
 }
 
-function fecharModal() {
+window.fecharModal = function() {
     modalTransacao.classList.remove('modal-active');
     setTimeout(() => { modalFundo.classList.add('hidden'); }, 300);
 }
@@ -86,7 +83,6 @@ formTransacao.addEventListener('submit', async (e) => {
 
     for (let i = 0; i < parcelas; i++) {
         let dataNova = new Date(dataBase);
-        // O Supabase entende fuso horário, então adicionamos 12h pra evitar que o dia volte 1 pra trás por causa do fuso do Brasil
         dataNova.setHours(12); 
         dataNova.setMonth(dataNova.getMonth() + i);
         
@@ -105,19 +101,18 @@ formTransacao.addEventListener('submit', async (e) => {
         alert('Erro ao salvar: ' + error.message);
     } else {
         formTransacao.reset();
-        toggleParcelas();
-        fecharModal();
+        window.toggleParcelas();
+        window.fecharModal();
         carregarDados();
     }
 });
 
-// Carregar Dados da Tela
+// Carregar Dados
 async function carregarDados() {
     const ano = dataAtual.getFullYear();
     const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
     
     const dataInicio = `${ano}-${mes}-01`;
-    // Pega o último dia do mês atual
     const dataFim = new Date(ano, dataAtual.getMonth() + 1, 0).toISOString().split('T')[0];
 
     const { data, error } = await supabase
@@ -134,6 +129,8 @@ async function carregarDados() {
 
     let totais = { ganho: 0, despesa: 0 };
     const lista = document.getElementById('listaTransacoes');
+    
+    if(!lista) return;
     lista.innerHTML = '';
 
     if (data.length === 0) {
@@ -173,7 +170,6 @@ async function carregarDados() {
         lista.appendChild(item);
     });
 
-    // Atualiza Totais
     document.getElementById('totalGanhos').textContent = formatarDinheiro(totais.ganho);
     document.getElementById('totalDespesas').textContent = formatarDinheiro(totais.despesa);
     
