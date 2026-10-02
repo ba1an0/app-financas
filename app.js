@@ -1,4 +1,4 @@
-// Funções de Interface (Carregam primeiro para não quebrar os botões)
+// Funções de Interface
 const modalFundo = document.getElementById('modalFundo');
 const modalTransacao = document.getElementById('modalTransacao');
 const formTransacao = document.getElementById('formTransacao');
@@ -49,8 +49,8 @@ atualizarDisplayMes();
 const formatarDinheiro = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
 const formatarData = (dataStr) => { const p = dataStr.split('-'); return `${p[2]}/${p[1]}`; };
 
-// === SETUP SUPABASE COM AS SUAS CHAVES ===
-let meuBanco; // Declarado fora para todo o código enxergar
+// === SETUP SUPABASE ===
+let meuBanco; 
 try {
     const supabaseUrl = 'https://txmqbndqrcjglnavqtfk.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXFibmRxcmNqZ2xuYXZxdGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTQ5MjMsImV4cCI6MjEwNjQ3MDkyM30.PWRQA7SVF811wC7KW1AcTTp6l98WQictczF8XO3CDDE';
@@ -69,21 +69,34 @@ if(formTransacao) {
         const descricao = document.getElementById('descricao').value;
         const valorTotal = parseFloat(document.getElementById('valor').value);
         const dataBase = document.getElementById('data').value;
-        const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
+        
+        // MÁGICA DOS MESES: Define quantas vezes vai repetir dependendo do tipo
+        let qtdMeses = 1;
+        if (categoria === 'cartao') {
+            qtdMeses = parseInt(document.getElementById('parcelas').value) || 1;
+        } else if (categoria === 'fixo') {
+            qtdMeses = 60; // Projeta a despesa/ganho fixo por 5 anos (60 meses)
+        }
 
-        const valorParcela = valorTotal / parcelas;
+        // MÁGICA DO VALOR: Cartão divide, Fixo/Variável repete o valor cheio
+        const valorFinal = (categoria === 'cartao') ? (valorTotal / qtdMeses) : valorTotal;
         const inserts = [];
 
-        for (let i = 0; i < parcelas; i++) {
+        for (let i = 0; i < qtdMeses; i++) {
             let dataNova = new Date(dataBase);
             dataNova.setHours(12); 
             dataNova.setMonth(dataNova.getMonth() + i);
             
+            let desc = descricao;
+            if (categoria === 'cartao' && qtdMeses > 1) {
+                desc = `${descricao} (${i + 1}/${qtdMeses})`;
+            }
+            
             inserts.push({
                 tipo: tipo,
                 categoria: categoria,
-                descricao: parcelas > 1 ? `${descricao} (${i + 1}/${parcelas})` : descricao,
-                valor: valorParcela,
+                descricao: desc,
+                valor: valorFinal,
                 data: dataNova.toISOString().split('T')[0]
             });
         }
@@ -173,13 +186,39 @@ async function carregarDados() {
     document.getElementById('saldoTotal').textContent = formatarDinheiro(saldo);
 }
 
-// Deletar Transação
+// Deletar Transação Inteligente
 window.deletarTransacao = async function(id) {
     if(!meuBanco) return;
-    if(confirm('Apagar essa transação?')) {
-        await meuBanco.from('transacoes').delete().eq('id', id);
-        carregarDados();
+
+    // Primeiro, descobre qual é a transação que você tá tentando apagar
+    const { data: transacao } = await meuBanco.from('transacoes').select('*').eq('id', id).single();
+    
+    if(!transacao) return;
+
+    if (transacao.categoria === 'fixo') {
+        // Se for fixa, pergunta como apagar
+        const resposta = prompt("Essa é uma transação FIXA. O que deseja fazer?\n\nDigite 1 = Apagar APENAS neste mês\nDigite 2 = Apagar neste e em TODOS os próximos\n\n(Deixe em branco para cancelar)");
+        
+        if (resposta === '1') {
+            await meuBanco.from('transacoes').delete().eq('id', id);
+        } else if (resposta === '2') {
+            // Apaga essa e todas pra frente que tenham o mesmo nome
+            await meuBanco.from('transacoes')
+                .delete()
+                .eq('categoria', 'fixo')
+                .eq('descricao', transacao.descricao)
+                .gte('data', transacao.data);
+        } else {
+            return; // Cancelou
+        }
+    } else {
+        // Se for variável ou cartão, apaga normal
+        if(confirm('Apagar essa transação?')) {
+            await meuBanco.from('transacoes').delete().eq('id', id);
+        }
     }
+    
+    carregarDados();
 }
 
 // Start
