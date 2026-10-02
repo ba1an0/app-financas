@@ -1,4 +1,28 @@
-// Funções de Interface
+// === SISTEMA DE MODO ESCURO ===
+const html = document.documentElement;
+const iconeTema = document.getElementById('iconeTema');
+
+// Checa se o usuário já tinha escolhido o tema antes ou o tema do celular
+if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    html.classList.add('dark');
+    if(iconeTema) { iconeTema.classList.replace('ph-moon', 'ph-sun'); }
+} else {
+    html.classList.remove('dark');
+}
+
+window.toggleTema = function() {
+    if (html.classList.contains('dark')) {
+        html.classList.remove('dark');
+        localStorage.theme = 'light';
+        iconeTema.classList.replace('ph-sun', 'ph-moon');
+    } else {
+        html.classList.add('dark');
+        localStorage.theme = 'dark';
+        iconeTema.classList.replace('ph-moon', 'ph-sun');
+    }
+}
+
+// === FUNÇÕES DE INTERFACE ===
 const modalFundo = document.getElementById('modalFundo');
 const modalTransacao = document.getElementById('modalTransacao');
 const formTransacao = document.getElementById('formTransacao');
@@ -28,7 +52,7 @@ window.toggleParcelas = function() {
     }
 };
 
-// Lógica de Datas
+// === LÓGICA DE DATAS ===
 let dataAtual = new Date(); 
 const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
 
@@ -70,15 +94,13 @@ if(formTransacao) {
         const valorTotal = parseFloat(document.getElementById('valor').value);
         const dataBase = document.getElementById('data').value;
         
-        // MÁGICA DOS MESES: Define quantas vezes vai repetir dependendo do tipo
         let qtdMeses = 1;
         if (categoria === 'cartao') {
             qtdMeses = parseInt(document.getElementById('parcelas').value) || 1;
         } else if (categoria === 'fixo') {
-            qtdMeses = 24; // Projeta a despesa/ganho fixo por 5 anos (60 meses)
+            qtdMeses = 60; 
         }
 
-        // MÁGICA DO VALOR: Cartão divide, Fixo/Variável repete o valor cheio
         const valorFinal = (categoria === 'cartao') ? (valorTotal / qtdMeses) : valorTotal;
         const inserts = [];
 
@@ -150,12 +172,14 @@ async function carregarDados() {
         totais[t.tipo] += parseFloat(t.valor);
         
         const isGanho = t.tipo === 'ganho';
-        const corIcone = isGanho ? 'text-green-500 bg-green-50' : 'text-red-500 bg-red-50';
+        // Cores dos ícones adaptadas pro dark mode
+        const corIcone = isGanho ? 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900/30' : 'text-red-600 bg-red-100 dark:text-red-400 dark:bg-red-900/30';
         const icone = isGanho ? 'ph-trend-up' : (t.categoria === 'cartao' ? 'ph-credit-card' : 'ph-receipt');
         const sinal = isGanho ? '+' : '-';
 
         const item = document.createElement('div');
-        item.className = 'bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between';
+        // Adicionado classes dark: no Javascript
+        item.className = 'bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-between transition-colors duration-300';
         
         item.innerHTML = `
             <div class="flex items-center gap-4">
@@ -163,15 +187,15 @@ async function carregarDados() {
                     <i class="ph ${icone} text-2xl"></i>
                 </div>
                 <div>
-                    <p class="text-sm font-bold text-slate-800">${t.descricao}</p>
-                    <p class="text-xs text-slate-400 font-medium">${formatarData(t.data)} • <span class="capitalize">${t.categoria}</span></p>
+                    <p class="text-sm font-bold text-slate-800 dark:text-slate-100">${t.descricao}</p>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 font-medium">${formatarData(t.data)} • <span class="capitalize">${t.categoria}</span></p>
                 </div>
             </div>
             <div class="flex flex-col items-end gap-1">
-                <p class="text-sm font-bold ${isGanho ? 'text-green-600' : 'text-slate-800'}">
+                <p class="text-sm font-bold ${isGanho ? 'text-green-600 dark:text-green-400' : 'text-slate-800 dark:text-slate-100'}">
                     ${sinal} ${formatarDinheiro(t.valor)}
                 </p>
-                <button onclick="deletarTransacao('${t.id}')" class="text-slate-300 hover:text-red-500 transition p-1">
+                <button onclick="deletarTransacao('${t.id}')" class="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-500 transition p-1">
                     <i class="ph-fill ph-trash text-lg"></i>
                 </button>
             </div>
@@ -190,34 +214,28 @@ async function carregarDados() {
 window.deletarTransacao = async function(id) {
     if(!meuBanco) return;
 
-    // Primeiro, descobre qual é a transação que você tá tentando apagar
     const { data: transacao } = await meuBanco.from('transacoes').select('*').eq('id', id).single();
-    
     if(!transacao) return;
 
     if (transacao.categoria === 'fixo') {
-        // Se for fixa, pergunta como apagar
         const resposta = prompt("Essa é uma transação FIXA. O que deseja fazer?\n\nDigite 1 = Apagar APENAS neste mês\nDigite 2 = Apagar neste e em TODOS os próximos\n\n(Deixe em branco para cancelar)");
         
         if (resposta === '1') {
             await meuBanco.from('transacoes').delete().eq('id', id);
         } else if (resposta === '2') {
-            // Apaga essa e todas pra frente que tenham o mesmo nome
             await meuBanco.from('transacoes')
                 .delete()
                 .eq('categoria', 'fixo')
                 .eq('descricao', transacao.descricao)
                 .gte('data', transacao.data);
         } else {
-            return; // Cancelou
+            return;
         }
     } else {
-        // Se for variável ou cartão, apaga normal
         if(confirm('Apagar essa transação?')) {
             await meuBanco.from('transacoes').delete().eq('id', id);
         }
     }
-    
     carregarDados();
 }
 
