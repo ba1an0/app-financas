@@ -32,13 +32,30 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans pb-24">
 
-    <!-- Header & Filtro -->
-    <header class="pt-8 pb-4 px-6 bg-white shadow-sm sticky top-0 z-10 flex justify-between items-center">
-        <div>
-            <h1 class="text-xl font-bold text-slate-800">Visão Geral</h1>
-            <p class="text-sm text-slate-500">Seu controle financeiro</p>
+<!-- Header & Filtro com Setas -->
+    <header class="pt-8 pb-4 px-6 bg-white shadow-sm sticky top-0 z-10">
+        <div class="flex justify-between items-center mb-4">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">Visão Geral</h1>
+                <p class="text-sm text-slate-500">Seu controle financeiro</p>
+            </div>
+            <!-- O ícone do usuário ou menu pode ficar aqui se quiser futuramente -->
         </div>
-        <input type="month" id="mesFiltro" class="bg-slate-100 text-slate-700 font-medium py-2 px-3 rounded-xl border-none outline-none text-sm">
+        
+        <!-- Navegação de Meses -->
+        <div class="flex items-center justify-between bg-slate-100 rounded-2xl p-2 mt-2">
+            <button onclick="mudarMes(-1)" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm text-slate-600 transition active:scale-95">
+                <i class="ph-bold ph-caret-left text-lg"></i>
+            </button>
+            
+            <h2 id="mesAtualDisplay" class="font-bold text-slate-700 uppercase tracking-wider text-sm">
+                <!-- Javascript vai preencher: Ex: OUTUBRO 2026 -->
+            </h2>
+            
+            <button onclick="mudarMes(1)" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm text-slate-600 transition active:scale-95">
+                <i class="ph-bold ph-caret-right text-lg"></i>
+            </button>
+        </div>
     </header>
 
     <!-- Dashboard Cards -->
