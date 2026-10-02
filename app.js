@@ -75,7 +75,7 @@ if(formTransacao) {
         if (categoria === 'cartao') {
             qtdMeses = parseInt(document.getElementById('parcelas').value) || 1;
         } else if (categoria === 'fixo') {
-            qtdMeses = 60; // Projeta a despesa/ganho fixo por 5 anos (60 meses)
+            qtdMeses = 24; // Projeta a despesa/ganho fixo por 5 anos (60 meses)
         }
 
         // MÁGICA DO VALOR: Cartão divide, Fixo/Variável repete o valor cheio
