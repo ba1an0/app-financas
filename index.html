@@ -10,15 +10,14 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-    <!-- Configuração do Tailwind para aceitar Dark Mode manual -->
+    <!-- 1º Carrega o Tailwind / 2º Configura o modo manual -->
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind = {
-            config: {
-                darkMode: 'class',
-            }
+        tailwind.config = {
+            darkMode: 'class'
         }
     </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
