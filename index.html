@@ -21,25 +21,21 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
-        /* Esconde a barra de rolagem mas mantém funcionando */
         ::-webkit-scrollbar { display: none; }
         * { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Animação do Modal (Bottom Sheet) */
         .modal-enter { transform: translateY(100%); transition: transform 0.3s ease-out; }
         .modal-active { transform: translateY(0); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans pb-24">
 
-<!-- Header & Filtro com Setas -->
+    <!-- Header & Filtro com Setas -->
     <header class="pt-8 pb-4 px-6 bg-white shadow-sm sticky top-0 z-10">
         <div class="flex justify-between items-center mb-4">
             <div>
                 <h1 class="text-xl font-bold text-slate-800">Visão Geral</h1>
                 <p class="text-sm text-slate-500">Seu controle financeiro</p>
             </div>
-            <!-- O ícone do usuário ou menu pode ficar aqui se quiser futuramente -->
         </div>
         
         <!-- Navegação de Meses -->
@@ -49,7 +45,7 @@
             </button>
             
             <h2 id="mesAtualDisplay" class="font-bold text-slate-700 uppercase tracking-wider text-sm">
-                <!-- Javascript vai preencher: Ex: OUTUBRO 2026 -->
+                <!-- Javascript preenche -->
             </h2>
             
             <button onclick="mudarMes(1)" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white hover:shadow-sm text-slate-600 transition active:scale-95">
