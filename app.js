@@ -1,57 +1,19 @@
-const supabaseUrl = 'https://txmqbndqrcjglnavqtfk.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXFibmRxcmNqZ2xuYXZxdGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTQ5MjMsImV4cCI6MjEwNjQ3MDkyM30.PWRQA7SVF811wC7KW1AcTTp6l98WQictczF8XO3CDDE';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-// DOM Elements
+// Funções de Interface (Carregam primeiro para não quebrar os botões)
 const modalFundo = document.getElementById('modalFundo');
 const modalTransacao = document.getElementById('modalTransacao');
 const formTransacao = document.getElementById('formTransacao');
 const mesAtualDisplay = document.getElementById('mesAtualDisplay');
 
-// === LÓGICA DE NAVEGAÇÃO DE MESES ===
-let dataAtual = new Date(); 
-
-const mesesNomes = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-];
-
-function atualizarDisplayMes() {
-    const mesNome = mesesNomes[dataAtual.getMonth()];
-    const ano = dataAtual.getFullYear();
-    if(mesAtualDisplay) {
-        mesAtualDisplay.textContent = `${mesNome} ${ano}`;
-    }
-}
-
-window.mudarMes = function(direcao) {
-    dataAtual.setMonth(dataAtual.getMonth() + direcao);
-    atualizarDisplayMes();
-    carregarDados(); 
-}
-
-atualizarDisplayMes();
-
-// Formatar Moeda
-const formatarDinheiro = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
-
-// Formatar Data (DD/MM)
-const formatarData = (dataStr) => {
-    const partes = dataStr.split('-');
-    return `${partes[2]}/${partes[1]}`;
-};
-
-// Funções do Modal
 window.abrirModal = function() {
     modalFundo.classList.remove('hidden');
     setTimeout(() => { modalTransacao.classList.add('modal-active'); }, 10);
     document.getElementById('data').value = new Date().toISOString().split('T')[0];
-}
+};
 
 window.fecharModal = function() {
     modalTransacao.classList.remove('modal-active');
     setTimeout(() => { modalFundo.classList.add('hidden'); }, 300);
-}
+};
 
 window.toggleParcelas = function() {
     const tipo = document.getElementById('tipo').value;
@@ -64,50 +26,85 @@ window.toggleParcelas = function() {
         divParcelas.classList.add('hidden');
         document.getElementById('parcelas').value = 1;
     }
+};
+
+// Lógica de Datas
+let dataAtual = new Date(); 
+const mesesNomes = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+
+window.mudarMes = function(direcao) {
+    dataAtual.setMonth(dataAtual.getMonth() + direcao);
+    atualizarDisplayMes();
+    carregarDados(); 
+};
+
+function atualizarDisplayMes() {
+    if(mesAtualDisplay) {
+        mesAtualDisplay.textContent = `${mesesNomes[dataAtual.getMonth()]} ${dataAtual.getFullYear()}`;
+    }
+}
+atualizarDisplayMes();
+
+// Utilitários
+const formatarDinheiro = (valor) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor);
+const formatarData = (dataStr) => { const p = dataStr.split('-'); return `${p[2]}/${p[1]}`; };
+
+// === SETUP SUPABASE COM AS SUAS CHAVES ===
+let supabase;
+try {
+    const supabaseUrl = 'https://txmqbndqrcjglnavqtfk.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InR4bXFibmRxcmNqZ2xuYXZxdGZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA4OTQ5MjMsImV4cCI6MjEwNjQ3MDkyM30.PWRQA7SVF811wC7KW1AcTTp6l98WQictczF8XO3CDDE';
+    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+} catch (erro) {
+    console.error("Erro crítico ao carregar as chaves:", erro);
 }
 
-// Salvar Dados
-formTransacao.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const tipo = document.getElementById('tipo').value;
-    const categoria = document.getElementById('categoria').value;
-    const descricao = document.getElementById('descricao').value;
-    const valorTotal = parseFloat(document.getElementById('valor').value);
-    const dataBase = document.getElementById('data').value;
-    const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
-
-    const valorParcela = valorTotal / parcelas;
-    const inserts = [];
-
-    for (let i = 0; i < parcelas; i++) {
-        let dataNova = new Date(dataBase);
-        dataNova.setHours(12); 
-        dataNova.setMonth(dataNova.getMonth() + i);
+// Salvar Transação no Banco
+if(formTransacao) {
+    formTransacao.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        inserts.push({
-            tipo: tipo,
-            categoria: categoria,
-            descricao: parcelas > 1 ? `${descricao} (${i + 1}/${parcelas})` : descricao,
-            valor: valorParcela,
-            data: dataNova.toISOString().split('T')[0]
-        });
-    }
+        const tipo = document.getElementById('tipo').value;
+        const categoria = document.getElementById('categoria').value;
+        const descricao = document.getElementById('descricao').value;
+        const valorTotal = parseFloat(document.getElementById('valor').value);
+        const dataBase = document.getElementById('data').value;
+        const parcelas = parseInt(document.getElementById('parcelas').value) || 1;
 
-    const { error } = await supabase.from('transacoes').insert(inserts);
+        const valorParcela = valorTotal / parcelas;
+        const inserts = [];
 
-    if (error) {
-        alert('Erro ao salvar: ' + error.message);
-    } else {
-        formTransacao.reset();
-        window.toggleParcelas();
-        window.fecharModal();
-        carregarDados();
-    }
-});
+        for (let i = 0; i < parcelas; i++) {
+            let dataNova = new Date(dataBase);
+            dataNova.setHours(12); 
+            dataNova.setMonth(dataNova.getMonth() + i);
+            
+            inserts.push({
+                tipo: tipo,
+                categoria: categoria,
+                descricao: parcelas > 1 ? `${descricao} (${i + 1}/${parcelas})` : descricao,
+                valor: valorParcela,
+                data: dataNova.toISOString().split('T')[0]
+            });
+        }
 
-// Carregar Dados
+        const { error } = await supabase.from('transacoes').insert(inserts);
+
+        if (error) {
+            alert('Erro ao salvar no banco de dados: ' + error.message);
+        } else {
+            formTransacao.reset();
+            window.toggleParcelas();
+            window.fecharModal();
+            carregarDados();
+        }
+    });
+}
+
+// Puxar Dados do Banco
 async function carregarDados() {
+    if(!supabase) return; // Se o Supabase falhar, não trava a tela
+
     const ano = dataAtual.getFullYear();
     const mes = String(dataAtual.getMonth() + 1).padStart(2, '0');
     
@@ -122,7 +119,7 @@ async function carregarDados() {
         .order('data', { ascending: true });
 
     if (error) {
-        console.error(error);
+        console.error("Erro ao puxar dados:", error);
         return;
     }
 
@@ -178,6 +175,7 @@ async function carregarDados() {
 
 // Deletar Transação
 window.deletarTransacao = async function(id) {
+    if(!supabase) return;
     if(confirm('Apagar essa transação?')) {
         await supabase.from('transacoes').delete().eq('id', id);
         carregarDados();
